@@ -127,6 +127,11 @@ export default function SettingsPage() {
 
       <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
         <SectionCard title="Reason rules" subtitle="Reasons staff pick when adding or deducting points" icon={Tag} className="lg:col-span-2">
+          <p className="mb-4 rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 dark:bg-zinc-950/50 dark:text-zinc-400">
+            Automatic deductions use the rule titled <span className="font-semibold">Absence</span> for absences and the
+            rule titled <span className="font-semibold">Late</span> for late task submissions. Set their points to the
+            amount that should be deducted.
+          </p>
           <form onSubmit={addReason} className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-zinc-200 p-4 dark:border-zinc-700">
             <div className="min-w-[200px] flex-1">
               <span className="mb-1.5 block text-xs font-semibold text-zinc-600 dark:text-zinc-400">New reason</span>

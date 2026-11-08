@@ -31,6 +31,7 @@ export default function PointsPage() {
   const [rewardSettingId, setRewardSettingId] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
+  const [autoSaving, setAutoSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [filter, setFilter] = useState('all')
 
@@ -142,15 +143,25 @@ export default function PointsPage() {
   }
 
   const triggerAutoDeduction = async () => {
-    setSaving(true)
+    setAutoSaving(true)
+    setFeedback(null)
     try {
-      await rewardsApi.deductAbsencesAndLateSubmissions()
-      setFeedback({ type: 'success', text: 'Auto-deduction triggered successfully.' })
+      const result = await rewardsApi.deductAbsencesAndLateSubmissions()
+      const created = result?.logsCreated ?? result?.LogsCreated ?? 0
+      const deducted = result?.totalDeductedPoints ?? result?.TotalDeductedPoints ?? 0
+      const message = result?.message ?? result?.Message
+      setFeedback({
+        type: 'success',
+        text:
+          created > 0
+            ? `Deducted ${formatNumber(deducted)} points across ${formatNumber(created)} record(s).`
+            : message || 'No new absences or late submissions to deduct.',
+      })
       load()
     } catch (err) {
       setFeedback({ type: 'error', text: err?.message || 'Failed to trigger auto-deduction.' })
     } finally {
-      setSaving(false)
+      setAutoSaving(false)
     }
   }
 
@@ -305,6 +316,21 @@ export default function PointsPage() {
             <Button type="submit" loading={saving} className="w-full">
               <Send size={15} /> {saving ? 'Saving…' : 'Save adjustment'}
             </Button>
+
+            <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
+              <p className="mb-2 text-xs text-zinc-400">
+                Uses the absence/late rules from Settings. Each absence or late task is deducted once.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                loading={autoSaving}
+                onClick={triggerAutoDeduction}
+                className="w-full"
+              >
+                <TrendingDown size={15} /> {autoSaving ? 'Applying…' : 'Apply absence & late deductions'}
+              </Button>
+            </div>
           </form>
         </SectionCard>
 

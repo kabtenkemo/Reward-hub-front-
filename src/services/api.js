@@ -248,6 +248,8 @@ export const rewardsApi = {
   updateSetting: (id, payload) =>
     request(`/rewards/settings/${id}`, { method: 'PUT', body: JSON.stringify(payload) }),
   stats: () => request('/rewards/stats'),
+
+  deductAbsencesAndLateSubmissions: () => request('/rewards/deduct-absences-late', { method: 'POST' }),
 }
 
 export const studentsApi = {

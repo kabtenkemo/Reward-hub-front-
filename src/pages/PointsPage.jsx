@@ -141,6 +141,19 @@ export default function PointsPage() {
     }
   }
 
+  const triggerAutoDeduction = async () => {
+    setSaving(true)
+    try {
+      await rewardsApi.deductAbsencesAndLateSubmissions()
+      setFeedback({ type: 'success', text: 'Auto-deduction triggered successfully.' })
+      load()
+    } catch (err) {
+      setFeedback({ type: 'error', text: err?.message || 'Failed to trigger auto-deduction.' })
+    } finally {
+      setSaving(false)
+    }
+  }
+
   const filtered = logs.filter((log) => {
     if (filter === 'added') return (log.points ?? 0) >= 0
     if (filter === 'deducted') return (log.points ?? 0) < 0

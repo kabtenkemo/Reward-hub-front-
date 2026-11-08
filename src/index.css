@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-white: #fdfbf7;
+
+  --color-brand-50: #fff1f2;
+  --color-brand-100: #ffe0e3;
+  --color-brand-200: #ffc7cd;
+  --color-brand-300: #ff9fa9;
+  --color-brand-400: #ff6676;
+  --color-brand-500: #f5364a;
+  --color-brand-600: #e11d2a;
+  --color-brand-700: #bd1522;
+  --color-brand-800: #9d1420;
+  --color-brand-900: #821722;
+  --color-brand-950: #470510;
+
+  --shadow-glow: 0 12px 32px -12px rgba(225, 29, 42, 0.55);
+  --shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06), 0 1px 3px rgba(16, 24, 40, 0.1);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background: #f5f4ef;
+    color: #18181b;
+  }
+
+  .dark body {
+    background: #09090b;
+    color: #fafafa;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #d4d4d8;
+    border-radius: 999px;
+  }
+  .dark ::-webkit-scrollbar-thumb {
+    background: #3f3f46;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a1a1aa;
+  }
+
+  ::selection {
+    background: rgba(225, 29, 42, 0.18);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-600);
+    outline-offset: 2px;
+  }
+}
+
+@layer utilities {
+  .card-surface {
+    background: #fdfbf7;
+    border: 1px solid rgba(228, 228, 231, 1);
+  }
+  .dark .card-surface {
+    background: #18181b;
+    border-color: rgba(63, 63, 70, 0.7);
+  }
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .drag-ghost {
+    opacity: 0.45;
+  }
+
+  .animate-in-up {
+    animation: inUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  @keyframes inUp {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}

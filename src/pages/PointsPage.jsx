@@ -34,8 +34,6 @@ export default function PointsPage() {
   const [rewardSettingId, setRewardSettingId] = useState('')
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
-  const [autoSaving, setAutoSaving] = useState(false)
-  const [statusSaving, setStatusSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [filter, setFilter] = useState('all')
 
@@ -143,55 +141,6 @@ export default function PointsPage() {
       setFeedback({ type: 'error', text: err?.message || 'Failed to save points.' })
     } finally {
       setSaving(false)
-    }
-  }
-
-  const triggerAutoDeduction = async () => {
-    setAutoSaving(true)
-    setFeedback(null)
-    try {
-      const result = await rewardsApi.deductAbsencesAndLateSubmissions()
-      const created = result?.logsCreated ?? result?.LogsCreated ?? 0
-      const deducted = result?.totalDeductedPoints ?? result?.TotalDeductedPoints ?? 0
-      const message = result?.message ?? result?.Message
-      setFeedback({
-        type: 'success',
-        text:
-          created > 0
-            ? `Deducted ${formatNumber(deducted)} points across ${formatNumber(created)} record(s).`
-            : message || 'No new absences or late submissions to deduct.',
-      })
-      load()
-    } catch (err) {
-      setFeedback({ type: 'error', text: err?.message || 'Failed to trigger auto-deduction.' })
-    } finally {
-      setAutoSaving(false)
-    }
-  }
-
-  const triggerStatusPoints = async () => {
-    setStatusSaving(true)
-    setFeedback(null)
-    try {
-      const result = await rewardsApi.applyStatusPoints()
-      const created = result?.logsCreated ?? result?.LogsCreated ?? 0
-      const updated = result?.logsUpdated ?? result?.LogsUpdated ?? 0
-      const removed = result?.logsRemoved ?? result?.LogsRemoved ?? 0
-      const total = result?.totalPointsApplied ?? result?.TotalPointsApplied ?? 0
-      const message = result?.message ?? result?.Message
-      const changed = created + updated + removed
-      setFeedback({
-        type: 'success',
-        text:
-          changed > 0
-            ? `Status points applied (${formatNumber(created)} new, ${formatNumber(updated)} updated, ${formatNumber(removed)} removed). Current total: ${formatSigned(total)}.`
-            : message || 'Status points are already up to date.',
-      })
-      load()
-    } catch (err) {
-      setFeedback({ type: 'error', text: err?.message || 'Failed to apply status points.' })
-    } finally {
-      setStatusSaving(false)
     }
   }
 
@@ -346,39 +295,6 @@ export default function PointsPage() {
             <Button type="submit" loading={saving} className="w-full">
               <Send size={15} /> {saving ? 'Saving…' : 'Save adjustment'}
             </Button>
-
-            <div className="space-y-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
-              <div>
-                <p className="mb-2 text-xs text-zinc-400">
-                  Uses the absence/late rules from Settings. Each absence or late task is deducted once.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  loading={autoSaving}
-                  onClick={triggerAutoDeduction}
-                  className="w-full"
-                >
-                  <TrendingDown size={15} /> {autoSaving ? 'Applying…' : 'Apply absence & late deductions'}
-                </Button>
-              </div>
-
-              <div>
-                <p className="mb-2 text-xs text-zinc-400">
-                  Applies the points configured for each task status. Only the current status is counted, and every
-                  team member receives the points.
-                </p>
-                <Button
-                  type="button"
-                  variant="outline"
-                  loading={statusSaving}
-                  onClick={triggerStatusPoints}
-                  className="w-full"
-                >
-                  <Coins size={15} /> {statusSaving ? 'Applying…' : 'Apply status points'}
-                </Button>
-              </div>
-            </div>
           </form>
         </SectionCard>
 

@@ -197,7 +197,7 @@ export default function SettingsPage() {
           <p className="mb-4 rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 dark:bg-zinc-950/50 dark:text-zinc-400">
             Automatic deductions use the rule titled <span className="font-semibold">Absence</span> for absences and the
             rule titled <span className="font-semibold">Late</span> for late task submissions. Set their points to the
-            amount that should be deducted.
+            amount that should be deducted — they are applied automatically in the background.
           </p>
           <form onSubmit={addReason} className="mb-4 flex flex-wrap items-end gap-3 rounded-2xl border border-dashed border-zinc-200 p-4 dark:border-zinc-700">
             <div className="min-w-[200px] flex-1">
@@ -317,9 +317,8 @@ export default function SettingsPage() {
         >
           <p className="mb-4 rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 dark:bg-zinc-950/50 dark:text-zinc-400">
             Use a positive value to add points and a negative value to deduct them. Only the current status of each
-            task is counted, and every team member receives the same points. After saving, open the{' '}
-            <span className="font-semibold">Points</span> page and press{' '}
-            <span className="font-semibold">Apply status points</span> to update the ledger.
+            task is counted, and every team member receives the same points. Changes are applied automatically in the
+            background, so no button is needed.
           </p>
 
           <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">

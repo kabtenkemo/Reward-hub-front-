@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import { Save, Tag, User, Palette, PlusCircle, Trash2 } from 'lucide-react'
+import { Award, Save, Tag, User, Palette, PlusCircle, Trash2 } from 'lucide-react'
 import { SectionCard, PageHeader, Button, Input, Badge, Toggle, Avatar, EmptyState, LoadingState } from '../components/ui'
 import ExportMenu from '../components/ExportMenu'
 import { adminApi } from '../lib/api'
@@ -14,6 +14,23 @@ const RULE_COLUMNS = [
   { key: 'entity', header: 'Business entity' },
 ]
 
+const STATUS_RULE_PREFIX = 'Status:'
+const STATUS_RULES = [
+  'Pending',
+  'In Progress',
+  'Rejected',
+  'Submitted',
+  'Submitted Late',
+  'Completed',
+  'Completed Late',
+]
+
+const isStatusRule = (rule) =>
+  (rule?.rewardTitle || '').trim().toLowerCase().startsWith('status:')
+
+const statusRuleName = (rule) =>
+  (rule?.rewardTitle || '').trim().slice(STATUS_RULE_PREFIX.length).trim()
+
 export default function SettingsPage() {
   const { user, role } = useAuth()
   const { isDark, toggleTheme } = useTheme()
@@ -24,6 +41,8 @@ export default function SettingsPage() {
   const [feedback, setFeedback] = useState('')
   const [newReason, setNewReason] = useState({ rewardTitle: '', points: 5 })
   const [adding, setAdding] = useState(false)
+  const [statusDrafts, setStatusDrafts] = useState({})
+  const [statusSaving, setStatusSaving] = useState(null)
 
   const load = useCallback(async () => {
     setLoading(true)
@@ -40,6 +59,19 @@ export default function SettingsPage() {
   useEffect(() => {
     load()
   }, [load])
+
+  useEffect(() => {
+    const next = {}
+    STATUS_RULES.forEach((name) => {
+      const rule = rules.find(
+        (r) => isStatusRule(r) && statusRuleName(r).toLowerCase() === name.toLowerCase(),
+      )
+      next[name] = rule?.points ?? 0
+    })
+    setStatusDrafts(next)
+  }, [rules])
+
+  const reasonRules = rules.filter((rule) => !isStatusRule(rule))
 
   const save = async (rule) => {
     setSavingId(rule.id)
@@ -99,6 +131,41 @@ export default function SettingsPage() {
     }
   }
 
+  const saveStatusRule = async (name) => {
+    const points = Number(statusDrafts[name]) || 0
+    const existing = rules.find(
+      (r) => isStatusRule(r) && statusRuleName(r).toLowerCase() === name.toLowerCase(),
+    )
+
+    setStatusSaving(name)
+    setFeedback('')
+    try {
+      if (existing) {
+        const updated = await adminApi.updateRule(existing.id, {
+          id: existing.id,
+          rewardTitle: `${STATUS_RULE_PREFIX}${name}`,
+          bussinessEntityId: existing.bussinessEntityId,
+          points,
+        })
+        setRules((prev) =>
+          prev.map((r) => (r.id === existing.id ? updated || { ...r, points } : r)),
+        )
+      } else {
+        const created = await adminApi.createRule({
+          rewardTitle: `${STATUS_RULE_PREFIX}${name}`,
+          points,
+          bussinessEntityId: user?.businessEntityId ?? null,
+        })
+        if (created) setRules((prev) => [...prev, created])
+      }
+      setFeedback(`Status points for "${name}" saved successfully.`)
+    } catch (err) {
+      setFeedback(err?.message || `Failed to save status points for "${name}".`)
+    } finally {
+      setStatusSaving(null)
+    }
+  }
+
   return (
     <>
       <PageHeader
@@ -110,17 +177,17 @@ export default function SettingsPage() {
               exportReport(format, {
                 filename: exportFilename('point-rules'),
                 title: 'Point rules',
-                subtitle: `${rules.length} rules`,
+                subtitle: `${reasonRules.length} rules`,
                 columns: RULE_COLUMNS,
-                rows: rules.map((rule) => ({
+                rows: reasonRules.map((rule) => ({
                   reason: rule.rewardTitle || 'Untitled reason',
                   points: rule.points ?? 0,
                   entity: rule.bussinessEntityId ?? '',
                 })),
-                summary: [{ label: 'Rules', value: rules.length }],
+                summary: [{ label: 'Rules', value: reasonRules.length }],
               })
             }
-            disabled={rules.length === 0}
+            disabled={reasonRules.length === 0}
           />
         }
       />
@@ -157,11 +224,11 @@ export default function SettingsPage() {
 
           {loading ? (
             <LoadingState />
-          ) : rules.length === 0 ? (
+          ) : reasonRules.length === 0 ? (
             <EmptyState icon={PlusCircle} title="No reasons yet" description="Add your first reason using the form above." />
           ) : (
             <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
-              {rules.map((rule) => (
+              {reasonRules.map((rule) => (
                 <div key={rule.id} className="flex flex-wrap items-center gap-3 py-3">
                   <div className="min-w-0 flex-1">
                     <p className="truncate text-sm font-bold text-zinc-800 dark:text-zinc-100">{rule.rewardTitle || 'Untitled reason'}</p>
@@ -199,18 +266,18 @@ export default function SettingsPage() {
           <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
             <div className="rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-950/50">
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Rules</p>
-              <p className="mt-1 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">{formatNumber(rules.length)}</p>
+              <p className="mt-1 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">{formatNumber(reasonRules.length)}</p>
             </div>
             <div className="rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-950/50">
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Total weight</p>
               <p className="mt-1 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">
-                {formatNumber(rules.reduce((s, r) => s + (Number(r.points) || 0), 0))}
+                {formatNumber(reasonRules.reduce((s, r) => s + (Number(r.points) || 0), 0))}
               </p>
             </div>
             <div className="rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-950/50">
               <p className="text-xs font-semibold uppercase tracking-wide text-zinc-400">Avg weight</p>
               <p className="mt-1 text-xl font-extrabold text-zinc-800 dark:text-zinc-100">
-                {formatNumber(rules.length ? Math.round(rules.reduce((s, r) => s + (Number(r.points) || 0), 0) / rules.length) : 0)}
+                {formatNumber(reasonRules.length ? Math.round(reasonRules.reduce((s, r) => s + (Number(r.points) || 0), 0) / reasonRules.length) : 0)}
               </p>
             </div>
           </div>
@@ -241,6 +308,56 @@ export default function SettingsPage() {
             </div>
           </SectionCard>
         </div>
+
+        <SectionCard
+          title="Task status points"
+          subtitle="Points added or deducted automatically for each task status"
+          icon={Award}
+          className="lg:col-span-3"
+        >
+          <p className="mb-4 rounded-xl bg-zinc-50 px-4 py-3 text-xs text-zinc-500 dark:bg-zinc-950/50 dark:text-zinc-400">
+            Use a positive value to add points and a negative value to deduct them. Only the current status of each
+            task is counted, and every team member receives the same points. After saving, open the{' '}
+            <span className="font-semibold">Points</span> page and press{' '}
+            <span className="font-semibold">Apply status points</span> to update the ledger.
+          </p>
+
+          <div className="flex flex-col divide-y divide-zinc-100 dark:divide-zinc-800">
+            {STATUS_RULES.map((name) => {
+              const existing = rules.find(
+                (r) => isStatusRule(r) && statusRuleName(r).toLowerCase() === name.toLowerCase(),
+              )
+              return (
+                <div key={name} className="flex flex-wrap items-center gap-3 py-3">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-bold text-zinc-800 dark:text-zinc-100">{name}</p>
+                    <p className="text-xs text-zinc-400">
+                      {existing ? `Rule: ${existing.rewardTitle}` : 'Not configured yet — saving will create the rule.'}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-semibold text-zinc-400">points</span>
+                    <Input
+                      type="number"
+                      value={statusDrafts[name] ?? 0}
+                      onChange={(e) =>
+                        setStatusDrafts((prev) => ({ ...prev, [name]: e.target.value }))
+                      }
+                      className="h-9 w-24"
+                    />
+                    <Button
+                      size="sm"
+                      loading={statusSaving === name}
+                      onClick={() => saveStatusRule(name)}
+                    >
+                      <Save size={14} /> Save
+                    </Button>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </SectionCard>
       </div>
     </>
   )

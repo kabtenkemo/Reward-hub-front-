@@ -14,6 +14,9 @@ const EXPORT_COLUMNS = [
   { key: 'points', header: 'Points' },
 ]
 
+const isStatusRule = (rule) =>
+  (rule?.rewardTitle || '').trim().toLowerCase().startsWith('status:')
+
 export default function PointsPage() {
   const [grades, setGrades] = useState([])
   const [classes, setClasses] = useState([])
@@ -32,6 +35,7 @@ export default function PointsPage() {
   const [notes, setNotes] = useState('')
   const [saving, setSaving] = useState(false)
   const [autoSaving, setAutoSaving] = useState(false)
+  const [statusSaving, setStatusSaving] = useState(false)
   const [feedback, setFeedback] = useState(null)
   const [filter, setFilter] = useState('all')
 
@@ -110,8 +114,8 @@ export default function PointsPage() {
 
   const classOptions = gradeId ? classes.filter((c) => String(c.gradeId) === gradeId) : []
 
-  const reasonOptions = settings.filter((s) =>
-    direction === 'add' ? Number(s.points) > 0 : Number(s.points) < 0,
+  const reasonOptions = settings.filter(
+    (s) => !isStatusRule(s) && (direction === 'add' ? Number(s.points) > 0 : Number(s.points) < 0),
   )
 
   const selectedReason = settings.find((s) => String(s.id) === rewardSettingId)
@@ -162,6 +166,32 @@ export default function PointsPage() {
       setFeedback({ type: 'error', text: err?.message || 'Failed to trigger auto-deduction.' })
     } finally {
       setAutoSaving(false)
+    }
+  }
+
+  const triggerStatusPoints = async () => {
+    setStatusSaving(true)
+    setFeedback(null)
+    try {
+      const result = await rewardsApi.applyStatusPoints()
+      const created = result?.logsCreated ?? result?.LogsCreated ?? 0
+      const updated = result?.logsUpdated ?? result?.LogsUpdated ?? 0
+      const removed = result?.logsRemoved ?? result?.LogsRemoved ?? 0
+      const total = result?.totalPointsApplied ?? result?.TotalPointsApplied ?? 0
+      const message = result?.message ?? result?.Message
+      const changed = created + updated + removed
+      setFeedback({
+        type: 'success',
+        text:
+          changed > 0
+            ? `Status points applied (${formatNumber(created)} new, ${formatNumber(updated)} updated, ${formatNumber(removed)} removed). Current total: ${formatSigned(total)}.`
+            : message || 'Status points are already up to date.',
+      })
+      load()
+    } catch (err) {
+      setFeedback({ type: 'error', text: err?.message || 'Failed to apply status points.' })
+    } finally {
+      setStatusSaving(false)
     }
   }
 
@@ -317,19 +347,37 @@ export default function PointsPage() {
               <Send size={15} /> {saving ? 'Saving…' : 'Save adjustment'}
             </Button>
 
-            <div className="border-t border-zinc-100 pt-4 dark:border-zinc-800">
-              <p className="mb-2 text-xs text-zinc-400">
-                Uses the absence/late rules from Settings. Each absence or late task is deducted once.
-              </p>
-              <Button
-                type="button"
-                variant="outline"
-                loading={autoSaving}
-                onClick={triggerAutoDeduction}
-                className="w-full"
-              >
-                <TrendingDown size={15} /> {autoSaving ? 'Applying…' : 'Apply absence & late deductions'}
-              </Button>
+            <div className="space-y-3 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+              <div>
+                <p className="mb-2 text-xs text-zinc-400">
+                  Uses the absence/late rules from Settings. Each absence or late task is deducted once.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  loading={autoSaving}
+                  onClick={triggerAutoDeduction}
+                  className="w-full"
+                >
+                  <TrendingDown size={15} /> {autoSaving ? 'Applying…' : 'Apply absence & late deductions'}
+                </Button>
+              </div>
+
+              <div>
+                <p className="mb-2 text-xs text-zinc-400">
+                  Applies the points configured for each task status. Only the current status is counted, and every
+                  team member receives the points.
+                </p>
+                <Button
+                  type="button"
+                  variant="outline"
+                  loading={statusSaving}
+                  onClick={triggerStatusPoints}
+                  className="w-full"
+                >
+                  <Coins size={15} /> {statusSaving ? 'Applying…' : 'Apply status points'}
+                </Button>
+              </div>
             </div>
           </form>
         </SectionCard>

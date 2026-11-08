@@ -250,6 +250,7 @@ export const rewardsApi = {
   stats: () => request('/rewards/stats'),
 
   deductAbsencesAndLateSubmissions: () => request('/rewards/deduct-absences-late', { method: 'POST' }),
+  applyStatusPoints: () => request('/rewards/apply-status-points', { method: 'POST' }),
 }
 
 export const studentsApi = {
